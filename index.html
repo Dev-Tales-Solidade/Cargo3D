@@ -328,22 +328,29 @@
                 function (gltf) {
                     truckModel = gltf.scene;
 
-                    // --- AJUSTES FINOS (Baseado nos seus testes) ---
-                    // Escala
-                    truckModel.scale.set(4.2, 4.2, 4.2); 
+                    // 1. ESCALA (Tamanho)
+            // 9.0 ficou enorme. Vamos tentar algo entre 4.0 e 4.5.
+            // O objetivo é que a prancha azul seja levemente maior que o retângulo branco.
+            truckModel.scale.set(6.5, 6.5, 6.5); 
 
-                    // Rotação: -90 Graus para corrigir a frente
-                    truckModel.rotation.y = -Math.PI / 2; 
+            // 2. ROTAÇÃO
+            // Mantém assim, parece correto na imagem
+            truckModel.rotation.y = -Math.PI / 2;
+            // 3. POSIÇÃO (O Ajuste Fino)
+            // x (1º número): Move o caminhão para FRENTE ou TRÁS.
+            // y (2º número): Move para CIMA ou BAIXO.
+            // z (3º número): Move para os LADOS (Esquerda/Direita).
+            
+            // Tente estes números iniciais:
+            truckModel.position.set(4.1, -0.01, 1.2); 
 
-                    // Posição Final Ajustada
-                    truckModel.position.set(6, -2.2, 1.0); 
+            truckModel.traverse(function (node) {
+                if (node.isMesh) {
+                    node.castShadow = true;
+                    node.receiveShadow = true;
+                }
+            });
 
-                    truckModel.traverse(function (node) {
-                        if (node.isMesh) {
-                            node.castShadow = true;
-                            node.receiveShadow = true;
-                        }
-                    });
 
                     scene.add(truckModel);
                     showDynamicStatus('Caminhão 3D Carregado!', 'ok');
@@ -1104,3 +1111,4 @@
     </script>
 </body>
 </html>
+
