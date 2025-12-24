@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simulador de Carga Pro v5 - EXPAMA</title>
+    <title>Simulador de Carga - EXPAMA</title>
+
+    <link rel="icon" href="./Carga_flora.jpg" type="image/jpeg">
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -352,7 +354,7 @@
                     });
 
                     scene.add(truckModel);
-                    showDynamicStatus('Caminhão 3D Carregado!', 'ok');
+                    showDynamicStatus('', 'ok');
                 },
                 undefined,
                 function (error) {
@@ -974,7 +976,7 @@
                 };
             }
 
-            const sobraPeso = targetWeight - globalBruto;
+            const diffPeso = targetWeight - globalBruto; // Diferença para calcular sobra ou excesso
             const utilization = targetWeight > 0 ? (globalBruto / targetWeight) * 100 : 0;
 
             // --- RENDERIZAR PDF ---
@@ -1009,7 +1011,19 @@
             // Coluna 1
             doc.text(`Peso Bruto Carregado: ${formatNum(globalBruto, 3)} kg`, 20, 80);
             doc.text(`Peso Bruto Destino: ${formatNum(targetWeight, 3)} kg`, 20, 86);
-            doc.text(`Sobra de Peso: ${formatNum(sobraPeso, 3)} kg`, 20, 92);
+            
+            // Lógica Dinâmica de Cor para Sobra/Excesso
+            if (diffPeso >= 0) {
+                doc.setTextColor(0, 150, 0); // Verde Escuro
+                doc.text(`Sobra de Peso: ${formatNum(diffPeso, 3)} kg`, 20, 92);
+            } else {
+                doc.setTextColor(220, 0, 0); // Vermelho Alerta
+                doc.setFont("helvetica", "bold");
+                doc.text(`EXCESSO DE PESO: ${formatNum(Math.abs(diffPeso), 3)} kg`, 20, 92);
+                doc.setFont("helvetica", "normal");
+            }
+            doc.setTextColor(0, 0, 0); // Voltar para preto
+
             doc.text(`Utilização Peso: ${formatNum(utilization, 2)}%`, 20, 98);
 
             // Coluna 2
