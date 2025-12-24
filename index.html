@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simulador de Carga Pro v4 - Final</title>
+    <title>Simulador de Carga Pro v5.1 - AutoSave</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     
     <script>
         tailwind.config = {
@@ -114,7 +115,7 @@
                 </div>
                 <div>
                     <h1 class="text-lg font-bold text-white leading-tight">Simulador Pro</h1>
-                    <p class="text-xs text-gray-400">Planejamento & Relatório</p>
+                    <p class="text-xs text-gray-400">PCP & Logística 4.0</p>
                 </div>
             </div>
         </div>
@@ -247,14 +248,22 @@
                 Gerar Relatório PDF
             </button>
 
-            <div class="grid grid-cols-2 gap-2">
-                <button id="save-btn" class="bg-gray-800 hover:bg-gray-700 text-gray-300 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 border border-white/5">
-                    <i data-lucide="download" class="w-4 h-4"></i> Salvar Layout
-                </button>
-                <label class="bg-gray-800 hover:bg-gray-700 text-gray-300 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 cursor-pointer border border-white/5">
-                    <i data-lucide="upload" class="w-4 h-4"></i> Carregar
-                    <input type="file" id="load-file" class="hidden" accept=".json">
+            <div class="space-y-2">
+                <label class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-indigo-900/20 active:scale-95">
+                    <i data-lucide="database" class="w-4 h-4"></i>
+                    Importar Base (Excel)
+                    <input type="file" id="import-db-btn" class="hidden" accept=".xlsx, .xls">
                 </label>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <button id="save-btn" class="bg-gray-800 hover:bg-gray-700 text-gray-300 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 border border-white/5">
+                        <i data-lucide="download" class="w-4 h-4"></i> Salvar Layout
+                    </button>
+                    <label class="bg-gray-800 hover:bg-gray-700 text-gray-300 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 cursor-pointer border border-white/5">
+                        <i data-lucide="upload" class="w-4 h-4"></i> Carregar Layout
+                        <input type="file" id="load-file" class="hidden" accept=".json">
+                    </label>
+                </div>
             </div>
         </div>
     </div>
@@ -286,16 +295,26 @@
         const SPACING = 0.05; 
         const MAGNETIC_RANGE = 0.3; 
 
-        // Banco de Dados
+        // Banco de Dados Inicial (Padrão) - Será substituído ao importar Excel
         const productDatabase = [
-            { "Nome do produto": "PAINEL RIPADO PRETO - 5 ¹/4 X 8'", "comprimento": 2.4384, "largura": 1.115, "altura": 2.51, "peso do palete": 2997.501, "peso do pacote": 999.167018, "quantidade de peças por pacote": 420, "m3 do pacote": 1.63881, "peso liquido do palete": 2750.53549, "peso liquido do pacote": 916.84516, "pacotes por palete": 3, "peça no mini fardo": 6, "etiqueta peça": "860012267514", "amarradinho": "10860012267511" },
-            { "Nome do produto": "PAINEL RIPADO BRANCO - 5 ¹/4 X 8'", "comprimento": 2.4384, "largura": 1.115, "altura": 2.51, "peso do palete": 2997.501, "peso do pacote": 999.167018, "quantidade de peças por pacote": 420, "m3 do pacote": 1.63881, "peso liquido do palete": 2750.53549, "peso liquido do pacote": 916.84516, "pacotes por palete": 3, "peça no mini fardo": 6, "etiqueta peça": "860012267507", "amarradinho": "10860012267504" },
-            { "Nome do produto": "PAINEL RIPADO MADEIRADO - 5 ¹/4 X 8'", "comprimento": 2.4384, "largura": 1.115, "altura": 2.51, "peso do palete": 2997.501, "peso do pacote": 999.167018, "quantidade de peças por pacote": 420, "m3 do pacote": 1.63881, "peso liquido do palete": 2750.53549, "peso liquido do pacote": 916.84516, "pacotes por palete": 3, "peça no mini fardo": 6, "etiqueta peça": "860012267521", "amarradinho": "10860012267528" },
-            { "Nome do produto": "MOLDURA L S4S 1 ¹/2 X 8'", "comprimento": 2.4384, "largura": 1.051, "altura": 2.47, "peso do palete": 3996.98796, "peso do pacote": 1332.32932, "quantidade de peças por pacote": 1092, "m3 do pacote": 1.72465, "peso liquido do palete": 3996.98796, "peso liquido do pacote": 1332.32932, "pacotes por palete": 3, "peça no mini fardo": 6, "etiqueta peça": "860012267538", "amarradinho": "20860012267532" },
-            { "Nome do produto": "MOLDURA L S4S 5 ¹/2 X 8'", "comprimento": 2.4384, "largura": 1.038, "altura": 2.47, "peso do palete": 3948.56503, "peso do pacote": 1316.18834, "quantidade de peças por pacote": 294, "m3 do pacote": 1.70254, "peso liquido do palete": 3948.56503, "peso liquido do pacote": 1316.18834, "pacotes por palete": 3, "peça no mini fardo": 6, "etiqueta peça": "860012267569", "amarradinho": "20860012267563" },
-            { "Nome do produto": "MOLDURA L S4S 3 ¹/2 X 8'", "comprimento": 2.4384, "largura": 1.127, "altura": 2.47, "peso do palete": 4287.52549, "peso do pacote": 1429.17516, "quantidade de peças por pacote": 504, "m3 do pacote": 1.85732, "peso liquido do palete": 4287.52549, "peso liquido do pacote": 1429.17516, "pacotes por palete": 3, "peça no mini fardo": 6, "etiqueta peça": "860012267545", "amarradinho": "20860012267549" },
-            { "Nome do produto": "MOLDURA L S4S 5 ¹/2 X 12'", "comprimento": 3.6570, "largura": 1.038, "altura": 1.86, "peso do palete": 4214.89111, "peso do pacote": 1404.96370, "quantidade de peças por pacote": 210, "m3 do pacote": 1.82415, "peso liquido do palete": 4214.89111, "peso liquido do pacote": 1404.96370, "pacotes por palete": 3, "peça no mini fardo": 6, "etiqueta peça": "860012267576", "amarradinho": "20860012267570" }
+            { "Nome do produto": "PAINEL RIPADO PRETO - 5 ¹/4 X 8'", "comprimento": 2.4384, "largura": 1.115, "altura": 2.51, "peso do palete": 2997.501, "peso do pacote": 999.167018, "quantidade de peças por pacote": 420, "m3 do pacote": 1.63881, "peso liquido do palete": 2750.53549, "peso liquido do pacote": 916.84516, "pacotes por palete": 3, "peça no mini fardo": 6, "etiqueta peça": "860012267514", "amarradinho": "10860012267511" }
         ];
+
+        // --- RECUPERAÇÃO AUTOMÁTICA DA MEMÓRIA ---
+        const savedDB = localStorage.getItem('cargoProDB_v5');
+        if (savedDB) {
+            try {
+                const parsed = JSON.parse(savedDB);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    productDatabase.length = 0;
+                    parsed.forEach(p => productDatabase.push(p));
+                    console.log("Banco recuperado da memória:", productDatabase.length, "itens");
+                }
+            } catch (e) {
+                console.error("Erro ao ler memória", e);
+            }
+        }
+        // -------------------------------------------
 
         const baseColors = [0x3b82f6, 0x10b981, 0xf59e0b, 0xef4444, 0x8b5cf6, 0xec4899, 0x06b6d4];
 
@@ -307,30 +326,24 @@
 
             loader.load('./caminhao.glb',
                 function (gltf) {
-                   truckModel = gltf.scene;
+                    truckModel = gltf.scene;
 
-            // 1. ESCALA (Tamanho)
-            // 9.0 ficou enorme. Vamos tentar algo entre 4.0 e 4.5.
-            // O objetivo é que a prancha azul seja levemente maior que o retângulo branco.
-            truckModel.scale.set(6.5, 6.5, 6.5); 
+                    // --- AJUSTES FINOS (Baseado nos seus testes) ---
+                    // Escala
+                    truckModel.scale.set(4.2, 4.2, 4.2); 
 
-            // 2. ROTAÇÃO
-            // Mantém assim, parece correto na imagem
-            truckModel.rotation.y = -Math.PI / 2;
-            // 3. POSIÇÃO (O Ajuste Fino)
-            // x (1º número): Move o caminhão para FRENTE ou TRÁS.
-            // y (2º número): Move para CIMA ou BAIXO.
-            // z (3º número): Move para os LADOS (Esquerda/Direita).
-            
-            // Tente estes números iniciais:
-            truckModel.position.set(4.1, -0.01, 1.2); 
+                    // Rotação: -90 Graus para corrigir a frente
+                    truckModel.rotation.y = -Math.PI / 2; 
 
-            truckModel.traverse(function (node) {
-                if (node.isMesh) {
-                    node.castShadow = true;
-                    node.receiveShadow = true;
-                }
-            });
+                    // Posição Final Ajustada
+                    truckModel.position.set(6, -2.2, 1.0); 
+
+                    truckModel.traverse(function (node) {
+                        if (node.isMesh) {
+                            node.castShadow = true;
+                            node.receiveShadow = true;
+                        }
+                    });
 
                     scene.add(truckModel);
                     showDynamicStatus('Caminhão 3D Carregado!', 'ok');
@@ -338,9 +351,48 @@
                 undefined,
                 function (error) {
                     console.error("Erro no carregamento do modelo:", error);
-                    showDynamicStatus('Erro no 3D (Use LiveServer)', 'error');
+                    showDynamicStatus('Caminhão não encontrado (404)', 'error');
                 }
             );
+        }
+
+        // --- FUNÇÃO DE IMPORTAÇÃO DE EXCEL COM MEMÓRIA ---
+        function importDatabaseFromExcel(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+
+                // Converte direto para JSON (assumindo que você padronizou o cabeçalho no Excel)
+                const jsonContent = XLSX.utils.sheet_to_json(worksheet);
+
+                if (jsonContent.length > 0) {
+                    // Atualiza a memória RAM
+                    productDatabase.length = 0; 
+                    jsonContent.forEach(item => productDatabase.push(item));
+                    
+                    // --- SALVA NA MEMÓRIA DO NAVEGADOR ---
+                    localStorage.setItem('cargoProDB_v5', JSON.stringify(productDatabase));
+                    // --------------------------------------
+
+                    showDynamicStatus(`${jsonContent.length} produtos salvos!`, 'ok');
+                    
+                    // Reseta a lista visual
+                    document.getElementById('products-list').innerHTML = ""; 
+                    addProductRow(); 
+                } else {
+                    showDynamicStatus('Planilha inválida', 'error');
+                }
+            };
+
+            reader.readAsArrayBuffer(file);
         }
 
         init();
@@ -352,7 +404,7 @@
             // Carrega o caminhão
             loadTruckModel();
             
-            // Posiciona a câmera mais longe para ver tudo
+            // Câmera ajustada
             camera.position.set(15, 12, 25); 
 
             animate();
@@ -364,7 +416,6 @@
             
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0x0a0a14);
-            // Nevoeiro ajustado para dar profundidade sem esconder o caminhão
             scene.fog = new THREE.Fog(0x0a0a14, 30, 80);
 
             camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 1000);
@@ -377,7 +428,7 @@
             renderer.toneMapping = THREE.ACESFilmicToneMapping;
             container.appendChild(renderer.domElement);
 
-            const ambient = new THREE.AmbientLight(0xffffff, 0.5); // Luz um pouco mais forte
+            const ambient = new THREE.AmbientLight(0xffffff, 0.5); 
             scene.add(ambient);
             const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
             dirLight.position.set(20, 30, 10);
@@ -407,7 +458,7 @@
             const groundMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.9, metalness: 0.1 });
             const ground = new THREE.Mesh(groundGeo, groundMat);
             ground.rotation.x = -Math.PI / 2;
-            ground.position.y = -1.6; // Chão mais baixo para caber as rodas
+            ground.position.y = -1.6; // Nivelado com rodas
             ground.receiveShadow = true;
             scene.add(ground);
 
@@ -422,7 +473,7 @@
             containerMesh.position.set(containerDim.length/2, containerDim.height/2, containerDim.width/2);
             scene.add(containerMesh);
 
-            // Piso do Container (Quase invisível para não tapar o chassi)
+            // Piso do Container
             const floorGeo = new THREE.PlaneGeometry(containerDim.length, containerDim.width);
             const floorMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.05 });
             const floor = new THREE.Mesh(floorGeo, floorMat);
@@ -749,6 +800,7 @@
             document.getElementById('save-btn').addEventListener('click', saveJSON);
             document.getElementById('load-file').addEventListener('change', loadJSON);
             document.getElementById('pdf-btn').addEventListener('click', generatePDF);
+            document.getElementById('import-db-btn').addEventListener('change', importDatabaseFromExcel);
             
             const list = document.getElementById('products-list');
             list.addEventListener('click', e => {
