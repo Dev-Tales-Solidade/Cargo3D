@@ -326,7 +326,7 @@
         ];
 
         let productDatabase = [...defaultDatabase];
-        const baseColors = [0x3b82f6, 0x10b981, 0xf59e0b, 0xef4444, 0x8b5cf6, 0xec4899, 0x06b6d4];
+        const baseColors = [0x0e60ed, 0x10b981, 0xf59e0b, 0xef4444, 0x8b5cf6, 0xec4899, 0x06b6d4];
 
         document.getElementById('info-date').valueAsDate = new Date();
 
@@ -403,27 +403,36 @@
             const container = document.getElementById('canvas-container');
             
             scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x0a0a14);
-            scene.fog = new THREE.Fog(0x0a0a14, 30, 80);
+            // CORRIGIDO: BRANCO TOTAL
+            scene.background = new THREE.Color(0xffffff); 
+            // CORRIGIDO: REMOVIDO NEBLINA/FOG
+            scene.fog = null; 
 
             camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 1000);
             camera.position.set(10, 8, 18); 
 
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, preserveDrawingBuffer: true });
             renderer.setSize(container.clientWidth, container.clientHeight);
+            // CORRIGIDO: NITIDEZ e CORES
+            renderer.setPixelRatio(window.devicePixelRatio); 
+            renderer.outputColorSpace = THREE.SRGBColorSpace;
+            
             renderer.shadowMap.enabled = true;
             renderer.shadowMap.type = THREE.PCFSoftShadowMap;
             renderer.toneMapping = THREE.ACESFilmicToneMapping;
             container.appendChild(renderer.domElement);
 
-            const ambient = new THREE.AmbientLight(0xffffff, 0.5); 
+            // CORRIGIDO: LUZ MAIS FORTE (0.9)
+            const ambient = new THREE.AmbientLight(0xffffff, 0.9); 
             scene.add(ambient);
+            
             const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
             dirLight.position.set(20, 30, 10);
             dirLight.castShadow = true;
             dirLight.shadow.mapSize.width = 2048;
             dirLight.shadow.mapSize.height = 2048;
             scene.add(dirLight);
+            
             const fillLight = new THREE.PointLight(0x3b82f6, 0.5);
             fillLight.position.set(-10, 10, -10);
             scene.add(fillLight);
@@ -458,17 +467,21 @@
             const yRoad = -1.63;
             const yLines = -1.62;
             
-            const grassGeo = new THREE.PlaneGeometry(1000, 1000);
-            const grassMat = new THREE.MeshStandardMaterial({ color: 0x1a2e12, roughness: 1.0 });
+            // OPÇÃO 2: Chão invisível que só mostra a sombra
+            const grassGeo = new THREE.PlaneGeometry(100, 100);
+            
+            // ShadowMaterial é transparente, mas desenha a sombra preta em cima
+            const grassMat = new THREE.ShadowMaterial({ opacity: 0.1 }); 
+            
             const grass = new THREE.Mesh(grassGeo, grassMat);
             grass.rotation.x = -Math.PI / 2;
             grass.position.set(0, yGrass, 0);
-            grass.receiveShadow = true;
+            grass.receiveShadow = true; // Sombra continua funcionando
             grass.name = 'environment';
             scene.add(grass);
 
-            const roadGeo = new THREE.PlaneGeometry(500, 16); 
-            const roadMat = new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.9 });
+            const roadGeo = new THREE.PlaneGeometry(100, 16); 
+            const roadMat = new THREE.MeshStandardMaterial({ color: 0x413a44, roughness: 0.9 });
             const road = new THREE.Mesh(roadGeo, roadMat);
             road.rotation.x = -Math.PI / 2;
             road.position.set(0, yRoad, 0); 
@@ -476,9 +489,9 @@
             road.name = 'environment';
             scene.add(road);
 
-            const lineGeo = new THREE.PlaneGeometry(500, 0.15); 
+            const lineGeo = new THREE.PlaneGeometry(100, 0.15); 
             const yellowMat = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
-            const whiteMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.8 });
+            const whiteMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 1 });
 
             const lineYellow1 = new THREE.Mesh(lineGeo, yellowMat);
             lineYellow1.rotation.x = -Math.PI / 2;
@@ -506,7 +519,8 @@
 
             const geometry = new THREE.BoxGeometry(containerDim.length, containerDim.height, containerDim.width);
             const edges = new THREE.EdgesGeometry(geometry);
-            containerMesh = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5 }));
+            const containerMeshMat = new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 10 });
+            containerMesh = new THREE.LineSegments(edges, containerMeshMat);
             containerMesh.position.set(containerDim.length/2, containerDim.height/2, -4.0);
             containerMesh.castShadow = false;
             scene.add(containerMesh);
@@ -519,10 +533,10 @@
             containerMesh.add(cargoGroup); 
 
             const floorGeo = new THREE.PlaneGeometry(containerDim.length, containerDim.width);
-            const floorMat = new THREE.MeshBasicMaterial({ color: 0x3b82f6, transparent: true, opacity: 0.1, side: THREE.DoubleSide });
+            const floorMat = new THREE.MeshBasicMaterial({ color: "black", transparent: true, opacity: 0.5, side: THREE.DoubleSide });
             const floor = new THREE.Mesh(floorGeo, floorMat);
             floor.rotation.x = -Math.PI / 2;
-            floor.position.set(0, -containerDim.height / 2 + 0.05, 0); 
+            floor.position.set(0, -containerDim.height / 2 + 0.0, 0); 
             floor.castShadow = false; 
             floor.receiveShadow = false;
             containerMesh.add(floor); 
@@ -994,6 +1008,12 @@
             reader.readAsText(file);
         }
 
+        function onWindowResize() {
+            camera.aspect = document.getElementById('canvas-container').clientWidth / document.getElementById('canvas-container').clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(document.getElementById('canvas-container').clientWidth, document.getElementById('canvas-container').clientHeight);
+        }
+
         // --- FUNÇÕES DE STATUS E FORMATAÇÃO (ATUALIZADAS) ---
         
         function formatWeight(n) {
@@ -1058,11 +1078,12 @@
         }
         // ----------------------------------------------------
 
-        // --- GERAÇÃO DE PDF COM CORREÇÃO DE PROPORÇÃO ---
+        // --- GERAÇÃO DE PDF COMPACTO (CORRIGIDO) ---
         function generatePDF() {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
 
+            // --- 1. Coleta de Dados ---
             const client = document.getElementById('info-client').value || "---";
             const dest = document.getElementById('info-dest').value || "---";
             const targetWeightStr = document.getElementById('info-target-weight').value || "0";
@@ -1074,7 +1095,7 @@
 
             let globalBruto = 0;
             let globalPecas = 0;
-            let globalUnits = 0; 
+            let globalUnits = 0;
             let globalM3 = 0;
 
             const groups = {};
@@ -1082,7 +1103,6 @@
             draggableObjects.forEach(obj => {
                 const name = obj.userData.name;
                 const db = productDatabase.find(p => p['Nome do produto'] === name);
-                
                 if (!db) return;
 
                 if (!groups[name]) {
@@ -1108,7 +1128,6 @@
                 const g = groups[key];
                 const pkgsInPallets = g.countPallet * g.db['pacotes por palete'];
                 const totalPkgs = pkgsInPallets + g.countLoose;
-                
                 const totalPecas = totalPkgs * g.db['quantidade de peças por pacote'];
                 const totalM3 = totalPkgs * g.db['m3 do pacote'];
 
@@ -1129,86 +1148,125 @@
             const diffPeso = targetWeight - globalBruto;
             const utilization = targetWeight > 0 ? (globalBruto / targetWeight) * 100 : 0;
 
-            doc.setFillColor(30, 30, 46);
-            doc.rect(0, 0, 210, 40, 'F');
-            doc.setTextColor(255, 255, 255);
-            doc.setFontSize(22);
-            doc.text("Relatório de Carga", 14, 20);
-            doc.setFontSize(10);
-            doc.setTextColor(200, 200, 200);
-            doc.text("Simulador Pro 3D", 14, 28);
-            doc.text(`Data: ${date}`, 190, 20, { align: 'right' });
+            // --- 2. Layout Visual (COMPACTADO) ---
 
-            doc.setTextColor(0, 0, 0);
-            doc.setFontSize(11);
-            doc.text(`Cliente: ${client}`, 14, 50);
-            doc.text(`Destino: ${dest}`, 14, 56);
-            doc.text(`Pedido/PO: ${po}`, 14, 62);
-            
-            doc.text(`Nº Container: ${containerNum}`, 110, 50);
-            doc.text(`Responsável: ${responsible}`, 110, 56);
-
+            // >>>> CABEÇALHO (25mm) <<<<
             doc.setFillColor(240, 240, 240);
-            doc.rect(14, 70, 180, 45, 'F');
-            doc.setFontSize(10);
+            doc.rect(0, 0, 210, 25, 'F');
             doc.setTextColor(0, 0, 0);
+            doc.setFontSize(19);
+            doc.text("CONFIGURAÇÃO DE CARGA", 105, 17, { align: 'center' });
+            doc.setFontSize(7);
+            doc.setTextColor(0, 0, 0);
+            doc.text(`Data: ${date}`, 190, 17, { align: 'right' });
 
-            doc.text(`Peso Bruto Carregado: ${formatNum(globalBruto, 3)} kg`, 20, 80);
-            doc.text(`Peso Bruto Destino: ${formatNum(targetWeight, 3)} kg`, 20, 86);
-            
+            // >>>> INFO CLIENTE (Y=32) <<<<
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(9); 
+            const infoStartY = 32; 
+            const infoLineHeight = 4.5; 
+
+            doc.text(`Cliente: ${client}`, 14, infoStartY);
+            doc.text(`Destino: ${dest}`, 14, infoStartY + infoLineHeight);
+            doc.text(`PO: ${po}`, 14, infoStartY + (infoLineHeight * 2));
+
+            doc.text(`Nº Container: ${containerNum}`, 110, infoStartY);
+            doc.text(`Responsável: ${responsible}`, 110, infoStartY + infoLineHeight);
+
+            // >>>> RESUMO CINZA (Y=48, Altura=30) <<<<
+            doc.setFillColor(240, 240, 240);
+            const summaryBoxY = 48; 
+            const summaryBoxH = 30; 
+            doc.rect(14, summaryBoxY, 180, summaryBoxH, 'F');
+
+            doc.setFontSize(9);
+            doc.setTextColor(0, 0, 0);
+            const sumTextStartY = summaryBoxY + 6;
+            const sumLineH = 5.5;
+
+            // Coluna Esquerda
+            doc.text(`Peso De Destino: ${formatNum(targetWeight, 3)} kg`, 20, sumTextStartY + sumLineH);
+            doc.text(`Peso Bruto Carregado: ${formatNum(globalBruto, 3)} kg`, 20, sumTextStartY);
+
             if (diffPeso >= 0) {
-                doc.setTextColor(0, 150, 0); 
-                doc.text(`Sobra de Peso: ${formatNum(diffPeso, 3)} kg`, 20, 92);
+                doc.setTextColor(0, 150, 0);
+                doc.text(`Sobra de Peso: ${formatNum(diffPeso, 3)} kg`, 20, sumTextStartY + (sumLineH * 2));
             } else {
-                doc.setTextColor(220, 0, 0); 
+                doc.setTextColor(220, 0, 0);
                 doc.setFont("helvetica", "bold");
-                doc.text(`EXCESSO DE PESO: ${formatNum(Math.abs(diffPeso), 3)} kg`, 20, 92);
+                doc.text(`Excesso de Peso: ${formatNum(Math.abs(diffPeso), 3)} kg`, 20, sumTextStartY + (sumLineH * 2));
                 doc.setFont("helvetica", "normal");
             }
-            doc.setTextColor(0, 0, 0); 
+            doc.setTextColor(0, 0, 0);
+            doc.text(`Utilização: ${formatNum(utilization, 2)}%`, 20, sumTextStartY + (sumLineH * 3));
 
-            doc.text(`Utilização Peso: ${formatNum(utilization, 2)}%`, 20, 98);
+            // Coluna Direita
+            doc.text(`Total Peças: ${formatNum(globalPecas)}`, 110, sumTextStartY);
+            doc.text(`Total Unit: ${globalUnits}`, 110, sumTextStartY + sumLineH);
+            doc.text(`Total M³: ${formatNum(globalM3, 3)}`, 110, sumTextStartY + (sumLineH * 2));
 
-            doc.text(`Total Geral de Peças: ${formatNum(globalPecas)}`, 110, 80);
-            doc.text(`Total Geral de Unit (Pacotes): ${globalUnits}`, 110, 86);
-            doc.text(`Total Geral de M³: ${formatNum(globalM3, 3)}`, 110, 92);
-
-            // CORREÇÃO DA IMAGEM
+            // --- 3. Captura Imagem (COM FUNDO 100% BRANCO) ---
             const originalSize = { width: renderer.domElement.width, height: renderer.domElement.height };
             const originalAspect = camera.aspect;
-            const originalBg = scene.background ? scene.background.clone() : new THREE.Color(0x0a0a14);
+            
+            // 1. Salvar os estados originais da cena (Fundo e Neblina)
+            const originalBg = scene.background ? scene.background.clone() : new THREE.Color(0xffffff);
+            const originalFogColor = scene.fog ? scene.fog.color.clone() : null;
 
-            const printWidth = 1800; 
-            const printHeight = 800; 
+            const printWidth = 2400;
+            const printHeight = 1000; 
 
             renderer.setSize(printWidth, printHeight);
             camera.aspect = printWidth / printHeight;
             camera.updateProjectionMatrix();
 
-            scene.background = new THREE.Color(0xffffff);
+            // 2. MUDAR TUDO PARA BRANCO PURO
+            // Isso remove a parte preta de cima
+            scene.background = new THREE.Color(0xffffff); 
+            
+            // IMPORTANTE: Se tiver neblina (fog), ela precisa ficar branca também, 
+            // senão o horizonte continua preto/escuro.
+            if (scene.fog) {
+                scene.fog.color.set(0xffffff);
+            }
 
             renderer.render(scene, camera);
-            const imgData = renderer.domElement.toDataURL("image/jpeg", 1.0);
+            const imgData = renderer.domElement.toDataURL("image/png", 0.90);
 
+            // 3. Restaurar a cena para como estava antes (Escuro)
             renderer.setSize(originalSize.width, originalSize.height);
             camera.aspect = originalAspect;
             camera.updateProjectionMatrix();
+            
             scene.background = originalBg;
+            if (scene.fog && originalFogColor) {
+                scene.fog.color.copy(originalFogColor);
+            }
             renderer.render(scene, camera);
 
-            doc.addImage(imgData, 'JPEG', 14, 120, 180, 80);
+            // >>>> IMAGEM COLADA NO RESUMO <<<<
+            const imageY = summaryBoxY + summaryBoxH + 2; 
+            const imageHeight = 65; 
+            doc.addImage(imgData, 'PHG', 14, imageY, 180, imageHeight);
 
-            doc.addPage();
-            doc.setFontSize(14);
-            doc.text("Detalhamento por Produto", 14, 20);
+            // --- 4. Detalhamento (Todos os campos incluídos) ---
+            const detailsTitleY = imageY + imageHeight + 8; 
+            doc.setFontSize(11);
+            doc.setTextColor(0,0,0);
+            doc.setFont("helvetica", "bold");
+            doc.text("Detalhamento por Produto", 14, detailsTitleY);
 
-            let yPos = 30;
+            let yPos = detailsTitleY + 8;
+            const blockHeight = 28; // Altura fixa por produto
+
+            doc.setFontSize(8); 
 
             for (const key in groups) {
                 const g = groups[key];
                 const calc = g.calculated;
 
-                if (yPos > 250) {
+                // Nova página se não couber
+                if (yPos + blockHeight > 285) {
                     doc.addPage();
                     yPos = 20;
                 }
@@ -1217,53 +1275,54 @@
                 const r = (c >> 16) & 255;
                 const gr = (c >> 8) & 255;
                 const b = c & 255;
-                
+
+                // Barra Colorida
                 doc.setFillColor(r, gr, b);
-                doc.rect(14, yPos, 5, 50, 'F'); 
+                doc.rect(14, yPos, 3, 22, 'F'); 
 
-                doc.setFontSize(11);
-                doc.setTextColor(0,0,0);
+                // Título
+                doc.setTextColor(0, 0, 0);
                 doc.setFont("helvetica", "bold");
-                doc.text(g.name, 22, yPos + 5);
-                
+                doc.text(g.name, 19, yPos + 4);
+
                 doc.setFont("helvetica", "normal");
-                doc.setFontSize(9);
-                doc.setTextColor(60,60,60);
+                doc.setTextColor(60, 60, 60);
 
-                doc.text(`Pallets: ${g.countPallet}`, 22, yPos + 15);
-                doc.text(`Unit Avulsos: ${g.countLoose}`, 22, yPos + 21);
-                doc.text(`Peso Líquido: ${formatNum(calc.netWeight, 3)} kg`, 22, yPos + 27);
-                doc.text(`Etiqueta: ${g.db['etiqueta peça']}`, 22, yPos + 33);
-                doc.text(`Amarradinho: ${g.db['amarradinho']}`, 22, yPos + 39);
+                // Colunas X
+                const col1 = 19;
+                const col2 = 80;
+                const col3 = 145;
 
-                const xRight = 100;
-                doc.text(`Total Unit (Pacotes): ${calc.totalPkgs}`, xRight, yPos + 15);
-                doc.text(`Total Peças: ${formatNum(calc.totalPecas)}`, xRight, yPos + 21);
-                doc.text(`Total M³: ${formatNum(calc.totalM3, 3)}`, xRight, yPos + 27);
-                doc.text(`Total LF: ${formatNum(calc.totalLF, 2)}`, xRight, yPos + 33);
-                doc.text(`Total BDL: ${formatNum(calc.totalBDL, 2)}`, xRight, yPos + 39);
+                // Linhas Y
+                const row1 = yPos + 9;
+                const row2 = yPos + 13;
+                const row3 = yPos + 17;
+                const row4 = yPos + 21;
 
-                doc.setDrawColor(220, 220, 220);
-                doc.line(14, yPos + 55, 196, yPos + 55);
+                // COLUNA 1
+                doc.text(`Pallets: ${g.countPallet}`, col1, row1);
+                doc.text(`Avulsos: ${g.countLoose}`, col1, row2);
+                doc.text(`Peso Líq.: ${formatNum(calc.netWeight, 2)} kg`, col1, row3);
+                doc.text(`Etiqueta: ${g.db['etiqueta peça']}`, col1, row4);
 
-                yPos += 65;
+                // COLUNA 2 (Com Amarradinho)
+                doc.text(`Amarradinho: ${g.db['amarradinho']}`, col2, row1);
+                doc.text(`Total Unit: ${calc.totalPkgs}`, col2, row2);
+                doc.text(`Total Peças: ${formatNum(calc.totalPecas)}`, col2, row3);
+                doc.text(`Total M³: ${formatNum(calc.totalM3, 3)}`, col2, row4);
+
+                // COLUNA 3 (Com LF e BDL)
+                doc.text(`Total LF: ${formatNum(calc.totalLF)}`, col3, row1);
+                doc.text(`Total BDL: ${formatNum(calc.totalBDL)}`, col3, row2);
+
+                // Linha divisória
+                doc.setDrawColor(230, 230, 230);
+                doc.line(14, yPos + 24, 196, yPos + 24);
+
+                yPos += blockHeight;
             }
 
-            const pageCount = doc.internal.getNumberOfPages();
-            doc.setFontSize(8);
-            doc.setTextColor(150, 150, 150);
-            for(let i = 1; i <= pageCount; i++) {
-                doc.setPage(i);
-                doc.text(`Página ${i} de ${pageCount}`, 105, 290, { align: 'center' });
-            }
-
-            doc.save(`Relatorio_Detalhado_${po}.pdf`);
-        }
-
-        function onWindowResize() {
-            camera.aspect = document.getElementById('canvas-container').clientWidth / document.getElementById('canvas-container').clientHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(document.getElementById('canvas-container').clientWidth, document.getElementById('canvas-container').clientHeight);
+            doc.save(`Relatório_Carga_${po}.pdf`);
         }
 
         function animate() {
